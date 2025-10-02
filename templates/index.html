@@ -1,35 +1,244 @@
-<!doctype html>
-<!--
- Copyright 2021 Google LLC
+<!DOCTYPE html>
+<html lang="ja">
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
--->
-
-<html>
 <head>
-  <title>Datastore and Firebase Auth Example</title>
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
-  <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Personal Diary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
 
-  <h1>Datastore and Firebase Auth Example</h1>
+<body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto p-4 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">AI Personal Diary</h1>
+            <p class="text-gray-600 mt-2">あなただけのAIが、日々の記録からアドバイスをくれます。</p>
+        </header>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Diary -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col">
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">日記を書く</h2>
+                <div class="flex-grow flex flex-col">
+                    <textarea id="diary-input"
+                        class="w-full h-40 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                        placeholder="今日の出来事や感じたことを記録しましょう..."></textarea>
+                    <button id="save-diary-btn"
+                        class="mt-4 bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 active:bg-blue-700 transition duration-200 self-end">
+                        日記を保存する
+                    </button>
+                    <div id="toast-message"
+                        class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
+                        日記を保存しました！
+                    </div>
+                </div>
+                <h3 class="text-xl font-semibold mt-8 mb-4 border-b pb-2">過去の日記</h3>
+                <div id="diary-entries" class="flex-grow overflow-y-auto no-scrollbar space-y-4 pr-2">
+                    <!-- Diary entries will be loaded here -->
+                </div>
+            </div>
+            <!-- Right Column: AI Chat -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col h-[75vh]">
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">AIに相談する</h2>
+                <div id="chat-window"
+                    class="flex-1 overflow-y-auto no-scrollbar mb-4 p-4 bg-gray-50 rounded-lg flex flex-col space-y-4">
+                    <!-- Chat messages will be appended here -->
+                    <div class="chat-bubble ai-bubble">
+                        こんにちは！どんなことでも話してくださいね。悩みや相談、ただの雑談でも大歓迎です。
+                    </div>
+                </div>
+                <!-- Loading Indicator -->
+                <div id="loading-indicator" class="hidden justify-center items-center py-4">
+                    <div class="loader"></div>
+                    <p class="ml-4 text-gray-600">AIが考えています...</p>
+                </div>
+                <div class="flex items-start space-x-4">
+                    <textarea id="prompt-input"
+                        class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                        placeholder="AIに相談したいことを入力..." rows="3"></textarea>
+                    <button id="send-prompt-btn"
+                        class="bg-indigo-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-600 active:bg-indigo-700 transition duration-200 h-full">
+                        送信
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const diaryInput = document.getElementById('diary-input');
+            const saveDiaryBtn = document.getElementById('save-diary-btn');
+            const diaryEntries = document.getElementById('diary-entries');
+            const toastMessage = document.getElementById('toast-message');
+            const promptInput = document.getElementById('prompt-input');
+            const sendPromptBtn = document.getElementById('send-prompt-btn');
+            const chatWindow = document.getElementById('chat-window');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const API_KEY = "AIzaSyCaoW4r1iHSgFvJ8Xj7aU0nW6_kVC0AS1g"; // NOTE: Leave this empty. The environment will provide it.
+            // const API_KEY = ""; // NOTE: Leave this empty. The environment will provide it.
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+            // --- Data Management ---
+            const getStoredData = (key) => {
+                try {
+                    const data = localStorage.getItem(key);
+                    return data ? JSON.parse(data) : [];
+                } catch (error) {
+                    console.error(`Error parsing ${key} from localStorage`, error);
+                    return [];
+                }
+            };
+            const setStoredData = (key, data) => {
+                localStorage.setItem(key, JSON.stringify(data));
+            };
+            // --- Diary Functions ---
+            const renderDiaryEntries = () => {
+                diaryEntries.innerHTML = '';
+                const diaries = getStoredData('diaries');
+                if (diaries.length === 0) {
+                    diaryEntries.innerHTML = '<p class="text-gray-500">まだ日記がありません。</p>';
+                    return;
+                }
+                diaries.sort((a, b) => new Date(b.date) - new Date(a.date)); // Newest first
+                diaries.forEach(entry => {
+                    const entryEl = document.createElement('div');
+                    entryEl.className = 'bg-gray-50 p-4 rounded-lg border';
+                    const entryDate = new Date(entry.date).toLocaleString('ja-JP',
+                        { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    entryEl.innerHTML = `
+                        <p class="text-sm font-semibold text-gray-600">${entryDate}</p>
+                        <p class="mt-2 text-gray-800 whitespace-pre-wrap">${entry.content}</p>`;
+                    diaryEntries.appendChild(entryEl);
+                });
+            };
+            saveDiaryBtn.addEventListener('click', () => {
+                const content = diaryInput.value.trim();
+                if (!content) return;
+                const diaries = getStoredData('diaries');
+                diaries.push({ date: new Date().toISOString(), content: content });
+                setStoredData('diaries', diaries);
+                diaryInput.value = '';
+                renderDiaryEntries();
+                // Show toast
+                toastMessage.classList.remove('opacity-0');
+                setTimeout(
+                    () => {
+                    toastMessage.classList.add('opacity-0');
+                }, 2000);
+            });
+            // --- Chat Functions ---
+            const addMessageToChat = (message, sender) => {
+                const messageEl = document.createElement('div');
+                messageEl.className = `chat-bubble ${sender === 'user' ? 'user-bubble' : 'ai-bubble'}`;
+                // Sanitize and format the message to render newlines correctly
+                messageEl.textContent = message;
+                chatWindow.appendChild(messageEl);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            };
+            const renderChatHistory = () => {
+                const chatHistory = getStoredData('chatHistory');
+                chatHistory.forEach(msg => {
+                    addMessageToChat(msg.message, msg.sender);
+                });
+            };
+            sendPromptBtn.addEventListener('click', handleSendPrompt);
+            promptInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendPrompt();
+                }
+            });
+            async function handleSendPrompt() {
+                const promptText = promptInput.value.trim();
+                if (!promptText) return;
+                addMessageToChat(promptText, 'user');
+                promptInput.value = '';
+                promptInput.disabled = true;
+                sendPromptBtn.disabled = true;
+                loadingIndicator.classList.remove('hidden');
+                loadingIndicator.classList.add('flex');
+                try {
+                    // Save user message to history
+                    const chatHistory = getStoredData('chatHistory');
+                    chatHistory.push({ sender: 'user', message: promptText });
+                    setStoredData('chatHistory', chatHistory);
+                    // --- RAG Implementation ---
+                    const diaries = getStoredData('diaries');
+                    // Get recent 10 diaries
+                    const diaryContext = diaries.slice(-10).map(
+                        d => `日付: ${new Date(d.date).toLocaleDateString('ja-JP')}\n内容: ${d.content}`).join('\n\n');
+                    // Get recent 10 chat messages
+                    const chatContext = chatHistory.slice(-10).map(
+                        c => `${c.sender === 'user' ? 'ユーザー' : 'AI'}: ${c.message}`).join('\n');
+                    const systemPrompt = 
+`あなたは、ユーザーの親しい友人であり、思慮深いカウンセラーです。
+以下の情報に基づいて、ユーザーに寄り添った、具体的で、ポジティブなアドバイスを提供してください。
 
-  <h2>Last 10 visits</h2>
-  {% for time in times %}
-    <p>{{ time }}</p>
-  {% endfor %}
+# ユーザーの最近の日記
+${diaryContext || "日記はまだありません。"}
 
+# 最近の会話履歴
+${chatContext}
+
+# ルール
+- 過去の出来事や感情を十分に考慮してください。
+- 抽象的な一般論ではなく、ユーザーの状況に特化したアドバイスを心がけてください。
+- ユーザーを励まし、自己肯定感を高めるような、温かい言葉遣いをしてください。
+- 応答は日本語で、親しみやすい会話形式でお願いします。`;
+
+                    const payload = {
+                        contents: [{ parts: [{ text: promptText }] }],
+                        systemInstruction: {
+                            parts: [{ text: systemPrompt }]
+                        },
+                    };
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.statusText}`);
+                    }
+                    const result = await response.json();
+                    const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || "申し訳ありません、うまく応答を生成できませんでした。";
+                    addMessageToChat(aiResponse, 'ai');
+                    // Save AI response to history
+                    const updatedChatHistory = getStoredData('chatHistory');
+                    updatedChatHistory.push({ sender: 'ai', message: aiResponse });
+                    setStoredData('chatHistory', updatedChatHistory);
+                } catch (error) {
+                    console.error('Error calling Gemini API:', error);
+                    addMessageToChat('エラーが発生しました。しばらくしてからもう一度お試しください。', 'ai');
+                    addMessageToChat(error, 'ai');
+                } finally {
+                    promptInput.disabled = false;
+                    sendPromptBtn.disabled = false;
+                    loadingIndicator.classList.add('hidden');
+                    loadingIndicator.classList.remove('flex');
+                    promptInput.focus();
+                }
+            }
+            // --- Initial Load ---
+            function initializeApp() {
+                renderDiaryEntries();
+                renderChatHistory();
+                // Clear the default welcome message if there is a history
+                if (getStoredData('chatHistory').length > 0) {
+                    const initialMessage = chatWindow.querySelector('.ai-bubble');
+                    if (initialMessage && initialMessage.textContent.includes('こんにちは！')) {
+                        chatWindow.innerHTML = '';
+                        renderChatHistory();
+                    }
+                }
+            }
+            initializeApp();
+        });
+    </script>
 </body>
-</html>
 
+</html>

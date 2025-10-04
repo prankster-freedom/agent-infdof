@@ -1,3 +1,5 @@
 steps:
   - name: "bash"
     args: ["gcloud", "app", "deploy"]
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -1,5 +1,5 @@
 steps:
-  - name: "bash"
+  - name: 'gcr.io/cloud-builders/gcloud'
     args: ["gcloud", "app", "deploy"]
 options:
   logging: CLOUD_LOGGING_ONLY

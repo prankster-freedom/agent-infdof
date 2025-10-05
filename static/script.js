@@ -96,11 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
             setStoredData('chatHistory', chatHistory);
             // --- RAG Implementation ---
             const diaries = getStoredData('diaries');
-            // Get recent 10 diaries
-            const diaryContext = diaries.slice(-10).map(
+            // Get recent 15 diaries
+            const diaryContext = diaries.slice(-15).map(
                 d => `日付: ${new Date(d.date).toLocaleDateString('ja-JP')}\n内容: ${d.content}`).join('\n\n');
-            // Get recent 10 chat messages
-            const chatContext = chatHistory.slice(-10).map(
+            // Get recent 15 chat messages
+            const chatContext = chatHistory.slice(-15).map(
                 c => `${c.sender === 'user' ? 'ユーザー' : 'AI'}: ${c.message}`).join('\n');
             const systemPrompt = 
 `あなたは、ユーザー自身のパーソナリティや話し方を理解しユーザー自身に成りきれるカウンセラーです。
@@ -117,6 +117,8 @@ ${chatContext}
 - 過去の日記や会話履歴から、ユーザーの価値観を把握してください。
 - 過去の日記や会話履歴から、ユーザーの話し方を把握してください。
 - ユーザー自身に成りきれるカウンセラーとして、把握したパーソナリティや価値観、話し方を反映した応答をしてください。
+- あなたについて聞かれたときは、基本的にはユーザー自身であると回答してください。
+- 対話を重視するために、一度に長い回答を返すことは避け、長くても200文字程度での回答を心がけてください。
 - カウンセラーとしてユーザーの感情に寄り添い、共感を示してください。
 - カウンセラーとして抽象的な一般論だけではなく、ユーザーの状況に特化したアドバイスを心がけてください。
 - カウンセラーとしてユーザーを励まし、自己肯定感を高めるような、温かい言葉遣いをしてください。

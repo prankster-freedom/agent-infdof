@@ -3,11 +3,50 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>AI Personal Diary</title>
+    <title>成長型AIエージェント アイ (テストページ)</title>
+    <script src="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.css" />
 </head>
 
-<body class="bg-gray-100 text-gray-800">
-    <h1>私による私のためのAI</h1>
-    <p>これまでの会話や日記を学習して使えば使うほどにあなた自身に近づいていきます</p>
+<script src="https://www.gstatic.com/firebasejs/7.8.0/firebase-auth.js"></script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBbvKFC5rPvg7qa1xlaV01y2zmRj0PPpgM",
+    authDomain: "metalogue-473616.firebaseapp.com",
+    projectId: "metalogue-473616",
+    storageBucket: "metalogue-473616.firebasestorage.app",
+    messagingSenderId: "917451835641",
+    appId: "1:917451835641:web:379e4bb16611079486ba28"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
+<body>
+    <h1>成長型AIエージェント アイ (テストページ)</h1>
+    <div id="firebaseui-auth-container"></div>
+
+    <button id="sign-out" hidden=true>Sign Out</button>
+
+    <div id="login-info" hidden=true>
+    <h2>Login info:</h2>
+    {% if user_data %}
+        <dl>
+        <dt>Name</dt><dd>{{ user_data['name'] }}</dd>
+        <dt>Email</dt><dd>{{ user_data['email'] }}</dd>
+        <dt>Last 10 visits</dt><dd>
+        {% for time in times %}
+            <p>{{ time['timestamp'] }}</p>
+            {% endfor %} </dd>
+        </dl>
+    {% elif error_message %}
+        <p>Error: {{ error_message }}</p>
+    {% endif %}
+    </div>
 </body>
 </html>

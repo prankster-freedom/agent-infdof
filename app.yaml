@@ -1,7 +1,8 @@
 runtime: python313
 
 # App Engineがアプリを実行するためのコマンド
-# gunicornというWSGIサーバーを使って、app.pyの中のappという名前のFlaskインスタンスを起動します
+# entrypointの指定がない場合はデフォルトで下記が指定され、
+# WSGIサーバーgunicornを使って、main.pyの中のappという名前のFlaskインスタンスを起動される
 # entrypoint: gunicorn -b :$PORT app:app
 
 # ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★

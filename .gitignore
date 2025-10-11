@@ -1,3 +1,4 @@
-/.env_local_win
-/keys
+/.venv_local_win
+/.vscode
+/.keys
 /__pycache__

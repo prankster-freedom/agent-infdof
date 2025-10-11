@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import google.generativeai as genai
 import firebase_admin
@@ -39,7 +39,18 @@ except Exception as e:
 app = Flask(__name__)
 CORS(app) # フロントエンドからのアクセスを許可
 
-APP_ID = 'default-chat-app'
+APP_ID = 'agent-infdof'
+
+# --- ルート (Routes) ---
+# `index.html`はFirebase Hostingへ、`app.py`はCloud Runへ、
+# と別々にデプロイする構成のほうがよい
+@app.route("/")
+def index():
+    """
+    フロントエンドのindex.htmlを配信するルート。
+    'templates'フォルダ内の'index.html'を返します。
+    """
+    return render_template("index.html")
 
 # --- ヘルパー関数 (Helper Functions) ---
 

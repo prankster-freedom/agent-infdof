@@ -7,7 +7,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore, auth
 
 # --- 初期設定 (Initial Setup for Google Cloud) ---
-
+""" 
 # [Google Cloud] Firebase Admin SDKの初期化
 # Cloud RunやApp EngineなどのGoogle Cloud環境で実行する場合、
 # 'GOOGLE_APPLICATION_CREDENTIALS'環境変数を設定する必要はありません。
@@ -40,7 +40,7 @@ app = Flask(__name__)
 CORS(app) # フロントエンドからのアクセスを許可
 
 APP_ID = 'agent-infdof'
-
+ """
 # --- ルート (Routes) ---
 # `index.html`はFirebase Hostingへ、`app.py`はCloud Runへ、
 # と別々にデプロイする構成のほうがよい
@@ -50,7 +50,8 @@ def index():
     フロントエンドのindex.htmlを配信するルート。
     'templates'フォルダ内の'index.html'を返します。
     """
-    return render_template("index.html")
+#    return render_template("index.html")
+    return render_template("index_test.html")
 
 # --- ヘルパー関数 (Helper Functions) ---
 
